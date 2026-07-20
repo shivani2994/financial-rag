@@ -1,0 +1,13 @@
+# Environment
+.env
+.venv/
+
+# Python
+__pycache__/
+*.pyc
+
+# Generated indexes (rebuildable from data/ + Module 3)
+data/chroma/
+
+# OS
+.DS_Store
