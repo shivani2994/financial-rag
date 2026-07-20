@@ -11,3 +11,6 @@ data/chroma/
 
 # OS
 .DS_Store
+
+# data
+data/**/*.pdf
