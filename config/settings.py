@@ -26,6 +26,11 @@ class Settings(BaseSettings):
     data_dir: Path = PROJECT_ROOT / "data"
     chroma_persist_dir: Path = PROJECT_ROOT / "data" / "chroma"
 
+    # --- Indexing (Module 3) ---
+    processed_chunks_path: Path = PROJECT_ROOT / "data" / "processed" / "chunks.jsonl"
+    chroma_collection_name: str = "financial_rag"
+    bm25_persist_path: Path = PROJECT_ROOT / "data" / "bm25" / "bm25.pkl"
+
     # --- Embeddings & reranking (Module 3 / 4) ---
     embedding_model: str = "BAAI/bge-base-en-v1.5"
     reranker_model: str = "BAAI/bge-reranker-base"

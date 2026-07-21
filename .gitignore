@@ -6,8 +6,9 @@
 __pycache__/
 *.pyc
 
-# Generated indexes (rebuildable from data/ + Module 3)
+# Generated indexes (rebuildable from data/processed/chunks.jsonl + Module 3)
 data/chroma/
+data/bm25/
 
 # OS
 .DS_Store
