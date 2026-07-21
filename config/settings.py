@@ -26,6 +26,10 @@ class Settings(BaseSettings):
     data_dir: Path = PROJECT_ROOT / "data"
     chroma_persist_dir: Path = PROJECT_ROOT / "data" / "chroma"
 
+    # --- Ingestion (Module 2) ---
+    processed_chunks_path: Path = PROJECT_ROOT / "data" / "processed" / "chunks.jsonl"
+    chunk_max_chars: int = 1500
+
     # --- Embeddings & reranking (Module 3 / 4) ---
     embedding_model: str = "BAAI/bge-base-en-v1.5"
     reranker_model: str = "BAAI/bge-reranker-base"

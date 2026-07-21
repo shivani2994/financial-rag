@@ -6,8 +6,9 @@
 __pycache__/
 *.pyc
 
-# Generated indexes (rebuildable from data/ + Module 3)
+# Generated indexes and processed chunks (rebuildable from data/ + ingestion)
 data/chroma/
+data/processed/
 
 # OS
 .DS_Store
