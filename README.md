@@ -16,6 +16,7 @@ and usage instructions will grow here as each module lands.
 ## Status
 
 **Phase 1, Module 2 (ingestion)** — complete.
+**Phase 1, Module 3 (indexing)** — complete.
 
 ## Install
 
@@ -53,3 +54,21 @@ rebuilds from scratch, so it never duplicates chunks.
 
 Indexing, retrieval, generation, serving, and evaluation instructions will be
 added here as their modules are built.
+### Indexing
+
+Indexing consumes `data/processed/chunks.jsonl` (the metadata-rich chunks
+produced by ingestion) and builds both search indexes from them in one pass:
+
+```bash
+uv run python -m src.indexing.pipeline
+```
+
+This embeds every chunk with bge-base-en-v1.5 into a persistent Chroma
+vector store at `data/chroma/`, builds a BM25 keyword index over the same
+chunks and persists it to `data/bm25/bm25.pkl`, and runs one sample
+similarity query so you can eyeball the results. Re-running always rebuilds
+both indexes from scratch, so it never leaves duplicate or stale vectors
+behind.
+
+Retrieval, generation, serving, and evaluation instructions will be added
+here as their modules are built.

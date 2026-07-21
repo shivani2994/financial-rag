@@ -9,6 +9,9 @@ __pycache__/
 # Generated indexes and processed chunks (rebuildable from data/ + ingestion)
 data/chroma/
 data/processed/
+# Generated indexes (rebuildable from data/processed/chunks.jsonl + Module 3)
+data/chroma/
+data/bm25/
 
 # OS
 .DS_Store
