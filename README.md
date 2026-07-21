@@ -15,7 +15,7 @@ and usage instructions will grow here as each module lands.
 
 ## Status
 
-**Phase 1, Module 1 (project scaffold)** — complete.
+**Phase 1, Module 2 (ingestion)** — complete.
 
 ## Install
 
@@ -36,5 +36,20 @@ cp .env.example .env
 
 ## Running
 
-Ingestion, indexing, retrieval, generation, serving, and evaluation
-instructions will be added here as their modules are built.
+### Ingestion
+
+Source PDFs live under `data/<TICKER>/`, named `<TICKER>_<DOCTYPE>_<PERIOD>.pdf`
+(e.g. `KO_10-K_FY2025.pdf`, `KO_transcript_2026Q1.pdf`). Run ingestion with:
+
+```bash
+uv run python -m src.ingestion.pipeline
+```
+
+This reads every PDF under `data/`, tags each chunk with metadata parsed from
+its filename, splits filings by item and transcripts by speaker turn, and
+writes the full chunk list to `data/processed/chunks.jsonl` (JSON Lines, one
+chunk per line), overwriting it each run. Re-running is safe — it always
+rebuilds from scratch, so it never duplicates chunks.
+
+Indexing, retrieval, generation, serving, and evaluation instructions will be
+added here as their modules are built.
