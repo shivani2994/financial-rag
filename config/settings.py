@@ -29,8 +29,8 @@ class Settings(BaseSettings):
     # --- Ingestion (Module 2) ---
     processed_chunks_path: Path = PROJECT_ROOT / "data" / "processed" / "chunks.jsonl"
     chunk_max_chars: int = 1500
+
     # --- Indexing (Module 3) ---
-    processed_chunks_path: Path = PROJECT_ROOT / "data" / "processed" / "chunks.jsonl"
     chroma_collection_name: str = "financial_rag"
     bm25_persist_path: Path = PROJECT_ROOT / "data" / "bm25" / "bm25.pkl"
 
@@ -43,9 +43,14 @@ class Settings(BaseSettings):
     rerank_top_k: int = 5
 
     # --- Generation (Module 5) ---
-    ollama_model: str = "llama3"
+    ollama_model: str = "llama3.2:1b"
     ollama_base_url: str = "http://localhost:11434"
-    refusal_confidence_threshold: float = 0.5
+    # bge-reranker-base's sigmoid score on this corpus: confident in-corpus hits
+    # land at ~0.4-1.0, clearly out-of-corpus queries mostly land under ~0.06.
+    # 0.1 sits in between; see Module 5 review notes for the calibration data
+    # and its known edge cases. Retune this once Module 7's refusal question
+    # set gives a real accuracy number to optimize against.
+    refusal_confidence_threshold: float = 0.1
 
     # --- Serving (Module 6) ---
     api_host: str = "0.0.0.0"
