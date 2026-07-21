@@ -19,6 +19,7 @@ and usage instructions will grow here as each module lands.
 **Phase 1, Module 3 (indexing)** — complete.
 **Phase 1, Module 4 (retrieval)** — complete.
 **Phase 1, Module 5 (generation)** — complete.
+**Phase 1, Module 6 (serving)** — complete.
 
 ## Install
 
@@ -117,5 +118,35 @@ The LLM itself sits behind a small interface (`src/generation/llm.py`) so a
 hosted model could replace Ollama by adding one new class, with no changes
 anywhere else in generation.
 
-Serving and evaluation instructions will be added here as their modules are
-built.
+### Serving
+
+A FastAPI service wraps retrieval through generation behind one endpoint.
+
+**Locally:**
+
+```bash
+uv run uvicorn src.serving.app:app --host 0.0.0.0 --port 8000
+```
+
+```bash
+curl -X POST http://localhost:8000/ask \
+  -H "Content-Type: application/json" \
+  -d '{"question": "How did operating margin change for Mondelez?"}'
+```
+
+Optional `company` / `period` fields on the request scope retrieval, same as
+the CLI's `--company`/`--period` flags. Swagger docs: `http://localhost:8000/docs`.
+
+**In Docker** (app + a sidecar Ollama container, so nothing needs to be
+installed on the host beyond Docker itself):
+
+```bash
+docker compose -f docker/docker-compose.yml up -d --build
+docker compose -f docker/docker-compose.yml exec ollama ollama pull llama3.2:1b  # first run only
+```
+
+`data/` (chunks, the persisted Chroma/BM25 indexes) is mounted from the host,
+not baked into the image, so ingestion and indexing must already have been
+run on the host first. Set `APP_PORT` if 8000 is taken on your machine.
+
+Evaluation instructions will be added here once Module 7 is built.

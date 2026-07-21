@@ -1,0 +1,9 @@
+# data/ is mounted as a volume at runtime, not baked into the image.
+data/
+
+.venv/
+.git/
+__pycache__/
+*.pyc
+.env
+.pytest_cache/

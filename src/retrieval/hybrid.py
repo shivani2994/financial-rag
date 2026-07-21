@@ -19,8 +19,10 @@ def build_hybrid_retriever(k: int) -> EnsembleRetriever:
     vector_store = load_vector_store()
     dense_retriever = vector_store.as_retriever(search_kwargs={"k": k})
 
-    bm25_retriever = load_bm25_index()
-    bm25_retriever.k = k
+    # load_bm25_index() is cached and shared across every call (see its
+    # docstring) -- copy rather than mutate its `.k` in place, so concurrent
+    # requests with different candidate widths can't race on shared state.
+    bm25_retriever = load_bm25_index().model_copy(update={"k": k})
 
     return EnsembleRetriever(
         retrievers=[dense_retriever, bm25_retriever],

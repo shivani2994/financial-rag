@@ -8,6 +8,7 @@ don't need to re-read chunks.jsonl and re-tokenize every document.
 """
 
 import pickle
+from functools import lru_cache
 
 from langchain_community.retrievers import BM25Retriever
 from langchain_core.documents import Document
@@ -24,6 +25,13 @@ def build_bm25_index(documents: list[Document]) -> BM25Retriever:
     return retriever
 
 
+@lru_cache(maxsize=1)
 def load_bm25_index() -> BM25Retriever:
+    """Cached: Module 6 serves many requests from one long-lived process,
+    and re-unpickling the same file on every request buys nothing once it's
+    already in memory. Callers must not mutate the returned retriever in
+    place (e.g. its `.k`) since it's shared across every caller -- see
+    `build_hybrid_retriever`, which copies it instead.
+    """
     with open(settings.bm25_persist_path, "rb") as f:
         return pickle.load(f)

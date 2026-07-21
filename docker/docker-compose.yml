@@ -1,0 +1,26 @@
+services:
+  app:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    ports:
+      - "${APP_PORT:-8000}:8000"
+    environment:
+      - OLLAMA_BASE_URL=http://ollama:11434
+    volumes:
+      - ../data:/app/data
+    depends_on:
+      - ollama
+
+  # Ollama as its own service/container, per the finalized stack (open-source,
+  # local LLM runtime). The app reaches it over the compose network at
+  # http://ollama:11434, not localhost.
+  ollama:
+    image: ollama/ollama:latest
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_models:/root/.ollama
+
+volumes:
+  ollama_models:
