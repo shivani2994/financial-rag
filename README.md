@@ -15,7 +15,7 @@ and usage instructions will grow here as each module lands.
 
 ## Status
 
-**Phase 1, Module 3 (indexing)** — complete.
+**Phase 1, Module 4 (retrieval)** — complete.
 
 ## Install
 
@@ -52,5 +52,25 @@ similarity query so you can eyeball the results. Re-running always rebuilds
 both indexes from scratch, so it never leaves duplicate or stale vectors
 behind.
 
-Retrieval, generation, serving, and evaluation instructions will be added
-here as their modules are built.
+### Retrieval
+
+Retrieval consumes Module 3's persisted Chroma and BM25 indexes directly --
+nothing is rebuilt or re-embedded. It runs three stages: hybrid retrieval
+(dense + BM25, merged by reciprocal rank fusion) pulls a wide candidate
+pool, an optional metadata filter scopes it by company and/or period, then
+the bge-reranker-base cross-encoder re-scores what's left for final
+precision.
+
+```bash
+uv run python -m src.retrieval.pipeline "What drove revenue growth this quarter?"
+uv run python -m src.retrieval.pipeline "What drove revenue growth this quarter?" --company KO
+uv run python -m src.retrieval.pipeline "What happened this quarter?" --period 2025Q3
+```
+
+Prints all three stages (hybrid candidates, post-filter, post-rerank) so you
+can see exactly what each stage changed. Every result carries its full chunk
+metadata (company, doc_type, period, section_or_speaker, source_path,
+chunk_id), so its source is always traceable.
+
+Generation, serving, and evaluation instructions will be added here as their
+modules are built.
