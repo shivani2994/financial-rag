@@ -22,6 +22,8 @@ before returning an unfounded answer:
 import argparse
 from dataclasses import dataclass, field
 
+from langchain_core.documents import Document
+
 from config.settings import settings
 from src.generation.citations import Citation, resolve_citations
 from src.generation.llm import get_llm_client
@@ -38,6 +40,11 @@ class Answer:
     answer_text: str | None
     citations: list[Citation] = field(default_factory=list)
     top_retrieval_score: float | None = None
+    # The reranked passages retrieval handed to the LLM (populated even when
+    # refused, so observability/evaluation can see what almost-but-didn't
+    # clear the bar). Module 7 needs this for RAGAS's context-based metrics
+    # and for logging each query's top retrieved sources.
+    retrieved_documents: list[Document] = field(default_factory=list)
 
 
 def answer_question(
@@ -47,6 +54,7 @@ def answer_question(
 ) -> Answer:
     result = retrieve(question, company=company, period=period)
     top_score = float(result.reranked[0][1]) if result.reranked else None
+    retrieved_documents = [doc for doc, _ in result.reranked]
 
     if should_refuse_on_retrieval(result.reranked, settings.refusal_confidence_threshold):
         reason = (
@@ -58,10 +66,10 @@ def answer_question(
         )
         return Answer(
             question=question, refused=True, reason=reason, answer_text=None,
-            top_retrieval_score=top_score,
+            top_retrieval_score=top_score, retrieved_documents=retrieved_documents,
         )
 
-    documents = [doc for doc, _ in result.reranked]
+    documents = retrieved_documents
     prompt = build_prompt(question, documents)
     raw_answer = get_llm_client().generate(prompt).strip()
 
@@ -72,6 +80,7 @@ def answer_question(
             reason="The model determined the retrieved passages don't answer the question.",
             answer_text=None,
             top_retrieval_score=top_score,
+            retrieved_documents=retrieved_documents,
         )
 
     citations = resolve_citations(raw_answer, documents)
@@ -85,6 +94,7 @@ def answer_question(
             ),
             answer_text=None,
             top_retrieval_score=top_score,
+            retrieved_documents=retrieved_documents,
         )
 
     return Answer(
@@ -94,6 +104,7 @@ def answer_question(
         answer_text=raw_answer,
         citations=citations,
         top_retrieval_score=top_score,
+        retrieved_documents=retrieved_documents,
     )
 
 

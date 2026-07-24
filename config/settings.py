@@ -58,6 +58,14 @@ class Settings(BaseSettings):
 
     # --- Evaluation (Module 7) ---
     eval_question_set_path: Path = PROJECT_ROOT / "eval" / "question_set.xlsx"
+    query_log_path: Path = PROJECT_ROOT / "logs" / "queries.jsonl"
+    eval_run_log_path: Path = PROJECT_ROOT / "logs" / "eval_runs.jsonl"
+    top_sources_logged: int = 3
+    # Deliberately separate from `ollama_model` (the generation model under
+    # test) and held fixed across comparison runs: if the judge changed
+    # along with the generation model, a RAGAS score difference could be
+    # the judge behaving differently rather than generation improving.
+    ragas_judge_model: str = "llama3.2:1b"
 
 
 settings = Settings()

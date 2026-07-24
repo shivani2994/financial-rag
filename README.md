@@ -20,6 +20,7 @@ and usage instructions will grow here as each module lands.
 **Phase 1, Module 4 (retrieval)** — complete.
 **Phase 1, Module 5 (generation)** — complete.
 **Phase 1, Module 6 (serving)** — complete.
+**Phase 1, Module 7 (evaluation and observability)** — complete.
 
 ## Install
 
@@ -149,4 +150,25 @@ docker compose -f docker/docker-compose.yml exec ollama ollama pull llama3.2:1b 
 not baked into the image, so ingestion and indexing must already have been
 run on the host first. Set `APP_PORT` if 8000 is taken on your machine.
 
-Evaluation instructions will be added here once Module 7 is built.
+### Evaluation
+
+Runs every question in `eval/question_set.xlsx` through the full pipeline,
+scores answered questions with RAGAS (faithfulness, answer relevance,
+context precision -- judged locally by the same Ollama model and bge
+embeddings used elsewhere, no paid API calls), and reports refusal accuracy
+on the sheet's dedicated refusal-test questions:
+
+```bash
+uv run python -m src.evaluation.harness
+```
+
+Every query is logged to `logs/queries.jsonl` (latency, refusal status, top
+retrieved sources), refused or not.
+
+A local 1-2B Ollama model is a slow RAGAS judge -- each metric involves
+several sequential LLM calls, so a 15-question run can take a couple of
+hours; some judge calls will time out or fail to parse regardless (this is
+a known limitation of using a small local model as the judge, not a bug --
+see Module 7 review notes). `RunConfig(timeout=600, max_workers=2)` in
+`src/evaluation/harness.py` is tuned for this; a larger/hosted judge model
+would run much faster with the defaults.
