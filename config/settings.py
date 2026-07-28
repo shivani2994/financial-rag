@@ -52,6 +52,38 @@ class Settings(BaseSettings):
     # set gives a real accuracy number to optimize against.
     refusal_confidence_threshold: float = 0.1
 
+    # --- Refusal gate hardening: deterministic pre-generation checks ---
+    # Ticker -> alternate names/spellings that count as naming that company
+    # in a question. Tickers themselves (KO, PEP, MDLZ) are always matched
+    # too; these are the additional aliases the scope-coverage check
+    # recognizes. Keyword rule set, not a model -- deterministic and
+    # identical on every run.
+    company_aliases: dict[str, list[str]] = {
+        "KO": ["coca-cola", "coca cola", "the coca-cola company"],
+        "PEP": ["pepsico", "pepsi"],
+        "MDLZ": ["mondelez", "mondelez international", "mondelēz", "mondelēz international"],
+    }
+    # Phrases that mark a question as asking for live/current market data
+    # (a stock's price right now, today's valuation) -- evidence this corpus
+    # of static filings and transcripts can never contain, regardless of how
+    # confident retrieval is. Matched case-insensitively as substrings.
+    live_market_data_keywords: list[str] = [
+        "stock price",
+        "share price",
+        "trading price",
+        "current price",
+        "current valuation",
+        "today's price",
+        "today's valuation",
+        "market cap",
+        "market capitalization",
+        "market capitalisation",
+        "trading at",
+        "stock quote",
+        "real-time price",
+        "live price",
+    ]
+
     # --- Serving (Module 6) ---
     api_host: str = "0.0.0.0"
     api_port: int = 8000
