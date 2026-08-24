@@ -22,6 +22,33 @@ and usage instructions will grow here as each module lands.
 **Phase 1, Module 6 (serving)** — complete.
 **Phase 1, Module 7 (evaluation and observability)** — complete.
 
+**Refusal gate hardening — scope-coverage recovery step.** The scope-coverage
+check (part of Module 5's refusal gate) no longer refuses the instant it
+finds a company or period the retrieved evidence doesn't cover. It now
+attempts one bounded recovery first: for each missing (company, period)
+pair, it runs one targeted retrieval scoped to that pair, merges the result
+into the original candidates, and reranks the merge with the existing
+bge-reranker-base cross encoder -- then checks coverage exactly once more
+before deciding. If the gap closes, generation proceeds with the merged
+evidence; if not, it refuses, naming what's still missing and noting that a
+targeted retrieval was already attempted.
+
+Measured on the 15-question evaluation set (`llama3.2:1b`, threshold 0.1,
+same judge model, only this change): overall decision accuracy held at
+**9/15**, unchanged. One question (Q10) was recovered from a refusal into a
+grounded, cited answer. One question (Q06) still refuses, but now for an
+accurate reason after a genuine repair attempt, instead of the earlier
+run's fabricated citation (the model had attributed a claim to KO that was
+actually sourced from an MDLZ passage). One question (Q03) flipped
+independently of this change -- confirmed by re-running retrieval for it in
+isolation, which returned a byte-identical top score both times; the only
+difference was the LLM's own output at `temperature=0.0`, the same
+run-to-run nondeterminism already noted elsewhere in this project.
+Context precision on the answered questions moved from 0.717 to 0.851, and
+answer relevance also rose -- worth noting, but treat both cautiously: only
+6 of 15 questions were answered in either run, and a different 6 (Q03 out,
+Q10 in), so it's a small and not directly comparable sample.
+
 ## Install
 
 Requires [uv](https://docs.astral.sh/uv/) and [Ollama](https://ollama.com)
