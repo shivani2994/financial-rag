@@ -14,11 +14,16 @@ score-threshold gate alone let through:
 1. Evidence-type check: the question asks for live/current market data
    (e.g. "stock price today"), which a corpus of static filings and
    transcripts can never contain -- refused regardless of reranker score.
-2. Scope-coverage check: the question names a company or period the
-   retrieved chunks don't actually cover -- refused with the specific gap
-   named, rather than let a confidently-scored but off-target passage
-   through.
-3. Before calling the LLM at all: if Module 4's top reranked score doesn't
+2. Scope-coverage check, with one bounded repair attempt: the question
+   names a company or period the retrieved chunks don't actually cover.
+   Rather than refuse immediately, one targeted retrieval per missing
+   (company, period) pair is attempted, merged into the original
+   candidates, and reranked; the gap is checked once more against that
+   merged set. Closed -> generation proceeds with the merged evidence.
+   Still open -> refused, naming what's still missing and noting a
+   targeted retrieval was already tried. See `scope_check.py`.
+3. Before calling the LLM at all: if the top reranked score (of whichever
+   evidence is current at this point -- original, or repaired) doesn't
    clear `refusal_confidence_threshold`, retrieval itself wasn't confident
    enough to ground an answer.
 4. After calling the LLM: if the model itself says the passages don't
@@ -40,7 +45,7 @@ from src.generation.evidence_type_check import check_evidence_type
 from src.generation.llm import get_llm_client
 from src.generation.prompt import NO_ANSWER_MARKER, build_prompt
 from src.generation.refusal import should_refuse_on_retrieval
-from src.generation.scope_check import check_scope_coverage
+from src.generation.scope_check import attempt_scope_repair
 from src.retrieval.pipeline import retrieve
 
 
@@ -75,14 +80,17 @@ def answer_question(
             top_retrieval_score=top_score, retrieved_documents=retrieved_documents,
         )
 
-    scope_reason = check_scope_coverage(question, retrieved_documents, settings.company_aliases)
-    if scope_reason is not None:
+    scope_repair = attempt_scope_repair(question, result.reranked, settings.company_aliases)
+    reranked = scope_repair.reranked
+    top_score = float(reranked[0][1]) if reranked else None
+    retrieved_documents = [doc for doc, _ in reranked]
+    if scope_repair.refusal_reason is not None:
         return Answer(
-            question=question, refused=True, reason=scope_reason, answer_text=None,
+            question=question, refused=True, reason=scope_repair.refusal_reason, answer_text=None,
             top_retrieval_score=top_score, retrieved_documents=retrieved_documents,
         )
 
-    if should_refuse_on_retrieval(result.reranked, settings.refusal_confidence_threshold):
+    if should_refuse_on_retrieval(reranked, settings.refusal_confidence_threshold):
         reason = (
             f"No retrieved passage was confident enough to ground an answer "
             f"(top rerank score {top_score:.4f} < threshold "
