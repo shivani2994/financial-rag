@@ -15,12 +15,7 @@ and usage instructions will grow here as each module lands.
 
 ## Status
 
-**Phase 1, Module 2 (ingestion)** — complete.
-**Phase 1, Module 3 (indexing)** — complete.
-**Phase 1, Module 4 (retrieval)** — complete.
-**Phase 1, Module 5 (generation)** — complete.
-**Phase 1, Module 6 (serving)** — complete.
-**Phase 1, Module 7 (evaluation and observability)** — complete.
+**Phase 1, Modules 1 through 7**: complete.
 
 **Refusal gate hardening — scope-coverage recovery step.** The scope-coverage
 check (part of Module 5's refusal gate) no longer refuses the instant it
@@ -48,6 +43,12 @@ Context precision on the answered questions moved from 0.717 to 0.851, and
 answer relevance also rose -- worth noting, but treat both cautiously: only
 6 of 15 questions were answered in either run, and a different 6 (Q03 out,
 Q10 in), so it's a small and not directly comparable sample.
+
+**CI evaluation gate.** Every push and pull request runs a fast,
+deterministic gate (GitHub Actions) that checks pre-generation refusal
+accuracy and decision accuracy on the 15-question set without an LLM judge
+-- see [CI evaluation gate](#ci-evaluation-gate) below for the two-mode
+design, current thresholds, and how to verify it.
 
 ## Install
 
@@ -125,16 +126,24 @@ chunk_id), so its source is always traceable.
 
 ### Generation
 
-Generation runs Module 4's retrieval, then a three-stage refusal gate before
-handing anything to the LLM:
+Generation runs Module 4's retrieval, then a five-stage refusal gate before
+handing anything to the LLM. The first two are deterministic pre-generation
+checks added later (no LLM call, see the scope-coverage recovery step
+above); the rest are Module 5's original three:
 
-1. If retrieval's top reranked score doesn't clear `refusal_confidence_threshold`
+1. Evidence-type check: refuses questions asking for live/current market
+   data (e.g. a stock price "today"), which this corpus can never contain,
+   regardless of retrieval score.
+2. Scope-coverage check, with one bounded repair attempt: if the question
+   names a company/period the retrieved evidence doesn't cover, one
+   targeted retrieval is tried before deciding -- see above.
+3. If retrieval's top reranked score doesn't clear `refusal_confidence_threshold`
    (default 0.1, empirically calibrated -- see Module 5 review notes), it
    refuses before calling the LLM at all.
-2. The LLM is prompted to answer only from the retrieved passages and to
+4. The LLM is prompted to answer only from the retrieved passages and to
    respond with a fixed marker if they don't answer the question; if it
    does, that's a refusal too.
-3. If the model's answer doesn't cite any real retrieved passage, it can't
+5. If the model's answer doesn't cite any real retrieved passage, it can't
    be verified as grounded, so it's treated as a refusal rather than shown.
 
 ```bash
@@ -199,3 +208,75 @@ a known limitation of using a small local model as the judge, not a bug --
 see Module 7 review notes). `RunConfig(timeout=600, max_workers=2)` in
 `src/evaluation/harness.py` is tuned for this; a larger/hosted judge model
 would run much faster with the defaults.
+
+### CI evaluation gate
+
+The full RAGAS harness above is too slow (1.5-2.5 hours) to run on every
+push, so evaluation is split into two modes:
+
+| | Fast gate (`src/evaluation/fast_gate.py`) | Full harness (`src/evaluation/harness.py`) |
+|---|---|---|
+| Runs | Every push and PR (`.github/workflows/fast-evaluation-gate.yml`) | Manually only, via `workflow_dispatch` (`.github/workflows/full-ragas-evaluation.yml`) |
+| LLM calls | None | Ollama, as both generator and RAGAS judge |
+| What it checks | Real retrieval (dense + BM25 + bge-reranker-base) plus the three deterministic, LLM-free pre-generation refusal gates -- evidence-type check, scope-coverage check (with its repair attempt), score-threshold check | Full pipeline through generation, scored with RAGAS (faithfulness, answer relevance, context precision) |
+| Speed | Minutes | 1.5-2.5 hours |
+| Determinism | Yes -- verified by running it twice locally and diffing the JSON output byte-for-byte | No -- the LLM judge and generation model are not perfectly deterministic even at `temperature=0.0` (documented elsewhere in this README) |
+
+The fast gate stops right before the LLM call, so it measures whether a
+question would *reach* generation, not whether the eventual answer is
+good -- a question that clears all three gates is reported as "accepted",
+not "answered correctly". It calls the exact same gate functions
+`src/generation/pipeline.py` calls, in the same order, so it can't silently
+drift from what the real pipeline does up to the point it stops. Full
+answer quality is still only measured by the slow harness.
+
+**Why retrieval runs for real in CI, not from a fixture:** `data/chroma/`
+and `data/bm25/` are gitignored, regenerable build artifacts -- never
+committed. `data/processed/chunks.jsonl` (ingestion's output) *is*
+committed, so the CI workflow rebuilds the real indexes from it
+(`uv run python -m src.indexing.pipeline`) every run, the same command a
+developer runs locally. bge-base-en-v1.5 and bge-reranker-base are small,
+public, CPU-only, no-auth-required models that genuinely run on a hosted
+GitHub Actions runner in a few minutes, so there was no need to fake
+retrieval or replay a canned sample of past results -- only the Ollama LLM
+judge is the genuinely slow, CI-inappropriate part, and the fast gate never
+touches it.
+
+**Thresholds** (`eval/gate_thresholds.json`), set to match the currently
+measured state so the gate passes now and fails on a real regression:
+
+```json
+{
+  "min_refusal_accuracy": 0.66,
+  "min_decision_accuracy": 0.66
+}
+```
+
+Measured locally at the time these were set: `refusal_accuracy` = 2/3
+(0.667, one of the three out-of-corpus questions is accepted at the
+pre-generation stage -- it's later caught by the LLM's own self-refusal, a
+gate this fast mode doesn't exercise) and `decision_accuracy` = 10/15
+pre-generation (0.667). 0.66 sits just below both measured values: the
+current state passes, but the next-lower discrete outcome for either
+metric (1/3 refusal accuracy, or 9/15 decision accuracy) would fail the
+build.
+
+**These are not the same measurement as the full-pipeline 9/15 decision
+accuracy reported above, and they aren't supposed to match.** The fast
+gate stops before generation, so its `decision_accuracy` and
+`refusal_accuracy` only count what the three deterministic pre-generation
+gates resolve. Concretely, the fast gate's refusal accuracy is 2/3, not
+3/3, because Q15 ("What is PepsiCo's detailed plan for 2030?") clears all
+three deterministic gates and is reported as "accepted" here -- in the
+full pipeline it's still correctly refused, just later, when the model
+itself declines to answer via its own self-refusal marker, a gate this
+fast mode deliberately never runs. If these two numbers ever look like
+they contradict each other, they don't -- they're measuring different
+checkpoints in the same pipeline.
+
+```bash
+uv run python -m src.evaluation.fast_gate
+```
+
+Prints a summary, writes it to `eval/fast_gate_result.json`, and exits 1 if
+either threshold isn't met.
