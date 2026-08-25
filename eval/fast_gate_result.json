@@ -1,0 +1,131 @@
+{
+  "num_questions": 15,
+  "answerable_accepted": 8,
+  "answerable_total": 12,
+  "unanswerable_refused": 2,
+  "unanswerable_total": 3,
+  "refusal_accuracy": 0.6666666666666666,
+  "decision_accuracy": 0.6666666666666666,
+  "decisions": [
+    {
+      "question_id": "Q01",
+      "question": "What did Coca-Cola's management say about pricing in Q1 2026?",
+      "is_refusal_question": false,
+      "accepted": true,
+      "refusal_reason": null,
+      "top_retrieval_score": 0.2726505696773529
+    },
+    {
+      "question_id": "Q02",
+      "question": "What were the main risk factors PepsiCo listed in its annual report?",
+      "is_refusal_question": false,
+      "accepted": true,
+      "refusal_reason": null,
+      "top_retrieval_score": 0.9988318085670471
+    },
+    {
+      "question_id": "Q03",
+      "question": "Did Mondelez raise or lower its full-year guidance in Q1 2026?",
+      "is_refusal_question": false,
+      "accepted": true,
+      "refusal_reason": null,
+      "top_retrieval_score": 0.45988157391548157
+    },
+    {
+      "question_id": "Q04",
+      "question": "What did PepsiCo say was driving margin pressure in Q1 2026?",
+      "is_refusal_question": false,
+      "accepted": true,
+      "refusal_reason": null,
+      "top_retrieval_score": 0.4297066926956177
+    },
+    {
+      "question_id": "Q05",
+      "question": "What did Coca-Cola describe as its main growth drivers in Q1 2026?",
+      "is_refusal_question": false,
+      "accepted": true,
+      "refusal_reason": null,
+      "top_retrieval_score": 0.28576940298080444
+    },
+    {
+      "question_id": "Q06",
+      "question": "How did KO, PEP, and MDLZ each describe input-cost or commodity pressure in Q1 2026?",
+      "is_refusal_question": false,
+      "accepted": false,
+      "refusal_reason": "The retrieved evidence does not cover KO 2026Q1 named in the question. A targeted retrieval for the missing coverage was already attempted.",
+      "top_retrieval_score": 0.20147879421710968
+    },
+    {
+      "question_id": "Q07",
+      "question": "Which of the three leaned more on price increases vs volume growth this quarter?",
+      "is_refusal_question": false,
+      "accepted": false,
+      "refusal_reason": "No retrieved passage was confident enough to ground an answer (top rerank score 0.0617 < threshold 0.1)",
+      "top_retrieval_score": 0.061707329005002975
+    },
+    {
+      "question_id": "Q08",
+      "question": "How did each company characterize consumer demand in its most recent quarter?",
+      "is_refusal_question": false,
+      "accepted": true,
+      "refusal_reason": null,
+      "top_retrieval_score": 0.21657197177410126
+    },
+    {
+      "question_id": "Q09",
+      "question": "Did Coca-Cola's volume commentary improve or worsen from Q3 2025 to Q1 2026?",
+      "is_refusal_question": false,
+      "accepted": true,
+      "refusal_reason": null,
+      "top_retrieval_score": 0.21196585893630981
+    },
+    {
+      "question_id": "Q10",
+      "question": "What changed in PepsiCo's guidance between Q3 2025 and Q1 2026?",
+      "is_refusal_question": false,
+      "accepted": true,
+      "refusal_reason": null,
+      "top_retrieval_score": 0.7738569974899292
+    },
+    {
+      "question_id": "Q11",
+      "question": "Where in the filings does Mondelez discuss foreign-currency effects on revenue?",
+      "is_refusal_question": false,
+      "accepted": false,
+      "refusal_reason": "No retrieved passage was confident enough to ground an answer (top rerank score 0.0560 < threshold 0.1)",
+      "top_retrieval_score": 0.05603283643722534
+    },
+    {
+      "question_id": "Q12",
+      "question": "Which document and speaker said Coca-Cola expects pricing to moderate?",
+      "is_refusal_question": false,
+      "accepted": false,
+      "refusal_reason": "No retrieved passage was confident enough to ground an answer (top rerank score 0.0056 < threshold 0.1)",
+      "top_retrieval_score": 0.005588965490460396
+    },
+    {
+      "question_id": "Q13",
+      "question": "What is Coca-Cola's stock price today?",
+      "is_refusal_question": true,
+      "accepted": false,
+      "refusal_reason": "This question asks for live/current market data (matched phrase 'stock price'), which this corpus of static SEC filings and transcripts does not contain.",
+      "top_retrieval_score": 0.9990252256393433
+    },
+    {
+      "question_id": "Q14",
+      "question": "What are Nestle's margins this quarter?",
+      "is_refusal_question": true,
+      "accepted": false,
+      "refusal_reason": "No retrieved passage was confident enough to ground an answer (top rerank score 0.0020 < threshold 0.1)",
+      "top_retrieval_score": 0.001988655887544155
+    },
+    {
+      "question_id": "Q15",
+      "question": "What is PepsiCo's detailed plan for 2030?",
+      "is_refusal_question": true,
+      "accepted": true,
+      "refusal_reason": null,
+      "top_retrieval_score": 0.9541377425193787
+    }
+  ]
+}
