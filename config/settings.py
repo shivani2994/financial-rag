@@ -99,5 +99,9 @@ class Settings(BaseSettings):
     # the judge behaving differently rather than generation improving.
     ragas_judge_model: str = "llama3.2:1b"
 
+    # --- Fast evaluation gate (CI): deterministic, no LLM judge ---
+    gate_thresholds_path: Path = PROJECT_ROOT / "eval" / "gate_thresholds.json"
+    fast_gate_result_path: Path = PROJECT_ROOT / "eval" / "fast_gate_result.json"
+
 
 settings = Settings()

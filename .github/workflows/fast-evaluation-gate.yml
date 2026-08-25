@@ -1,0 +1,69 @@
+name: Fast evaluation gate
+
+# Runs on every push and pull request. This intentionally does NOT run the
+# full RAGAS evaluation (src/evaluation/harness.py) -- that mode uses a
+# local Ollama LLM as a judge and takes 1.5-2.5 hours even on a small model
+# (measured locally, see README), far too slow to gate every push on. See
+# full-ragas-evaluation.yml (manual trigger only) for that.
+#
+# This workflow runs src/evaluation/fast_gate.py instead: real retrieval
+# (bge-base-en-v1.5 dense embeddings + BM25 + bge-reranker-base, not faked
+# or replayed from a fixture) plus the three deterministic, LLM-free
+# pre-generation refusal gates. No LLM call happens anywhere in this
+# workflow -- generation is skipped entirely, which is exactly what makes
+# this mode fast and deterministic in the first place.
+#
+# Honesty note on the vector index: data/chroma/ and data/bm25/ are
+# gitignored, regenerable build artifacts (Module 3's own convention, see
+# README) -- they are never committed. data/processed/chunks.jsonl (Module
+# 2's output) IS committed, so this workflow rebuilds the real indexes from
+# it fresh every run via `src.indexing.pipeline`, the same command a
+# developer runs locally. This was a deliberate choice over committing a
+# prebuilt index fixture or a canned sample of retrieval results: bge-base
+# and bge-reranker-base are small, public, CPU-only, no-auth models that
+# genuinely can run on a hosted GitHub Actions runner in a few minutes, so
+# there was no need to fake or sample around retrieval -- only the LLM
+# judge is genuinely infeasible in this environment, and this workflow
+# never touches it.
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  fast-gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+
+      - name: Set up Python
+        run: uv python install 3.12
+
+      # bge-base-en-v1.5 (~440MB) and bge-reranker-base (~1.1GB) are
+      # downloaded from Hugging Face Hub on first use. Caching them keyed
+      # on the model names avoids re-downloading on every run; the cache
+      # simply misses (not fails) the first time it's populated.
+      - name: Cache Hugging Face model downloads
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/huggingface
+          key: hf-models-bge-base-en-v1.5-bge-reranker-base
+
+      - name: Install dependencies
+        run: uv sync
+
+      - name: Build indexes from committed chunks.jsonl
+        run: uv run python -m src.indexing.pipeline
+
+      - name: Run fast evaluation gate
+        run: uv run python -m src.evaluation.fast_gate
+
+      - name: Upload fast gate result
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fast-gate-result
+          path: eval/fast_gate_result.json
